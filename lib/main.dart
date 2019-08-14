@@ -514,7 +514,7 @@ class SecondScreen extends StatelessWidget {
                   : Color(0xff262626),
             ),
             child: new ListView(children: <Widget>[
-              const Padding(padding: EdgeInsets.only(top: 32.0)),
+              const Padding(padding: EdgeInsets.only(top: 20.0)),
               _buildCard(horizontalMargin, Icons.money_off, "${getSymbol()}$formattedAmount", "${moneyData.currentValueStart}"),
               _buildCard(horizontalMargin, Icons.monetization_on, "${getSymbol()}$amountWithInflation", "${moneyData.currentValueEnd}"),
 
