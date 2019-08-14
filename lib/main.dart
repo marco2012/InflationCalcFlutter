@@ -130,7 +130,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return Container(
       height: _kPickerSheetHeight,
       padding: const EdgeInsets.only(top: 6.0),
-      color: CupertinoColors.white,
       child: DefaultTextStyle(
         style: const TextStyle(
           color: CupertinoColors.black,
@@ -172,7 +171,7 @@ class _MyHomePageState extends State<MyHomePage> {
               CupertinoPicker(
                 scrollController: scrollController,
                 itemExtent: _kPickerItemHeight,
-                backgroundColor: CupertinoColors.white,
+                backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
                 onSelectedItemChanged: (int index) {
                   setState(() => _selectedCurrencyIndex = index);
                   moneyData.currency = index;
@@ -224,7 +223,7 @@ class _MyHomePageState extends State<MyHomePage> {
               CupertinoPicker(
                 scrollController: scrollController,
                 itemExtent: _kPickerItemHeight,
-                backgroundColor: CupertinoColors.white,
+                backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
                 onSelectedItemChanged: (int index) {
                   setState(() => _selectedStartIndex = index);
                   moneyData.currentValueStart = years[index];
@@ -262,7 +261,7 @@ class _MyHomePageState extends State<MyHomePage> {
               CupertinoPicker(
                 scrollController: scrollController,
                 itemExtent: _kPickerItemHeight,
-                backgroundColor: CupertinoColors.white,
+                backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
                 onSelectedItemChanged: (int index) {
                   setState(() => _selectedEndIndex = index);
                   moneyData.currentValueEnd = years[index];
