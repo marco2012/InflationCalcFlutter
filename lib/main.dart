@@ -8,6 +8,7 @@ import 'package:dynamic_theme/dynamic_theme.dart';
 
 const double _kPickerSheetHeight = 216.0;
 const double _kPickerItemHeight = 32.0;
+const double cellHeight = 50.0;
 
 const List<String> currencies = <String>[
   '\$ United States Dollar',
@@ -196,7 +197,7 @@ class _MyHomePageState extends State<MyHomePage> {
           currencies[_selectedCurrencyIndex],
           style: const TextStyle(color: CupertinoColors.inactiveGray),
         ),
-      ], 44.0),
+      ], cellHeight),
     );
   }
 
@@ -235,7 +236,7 @@ class _MyHomePageState extends State<MyHomePage> {
           years[_selectedStartIndex].toString(),
           style: const TextStyle(color: CupertinoColors.inactiveGray),
         ),
-      ], 44.0),
+      ], cellHeight),
     );
   }
 
@@ -274,7 +275,7 @@ class _MyHomePageState extends State<MyHomePage> {
           years[_selectedEndIndex].toString(),
           style: const TextStyle(color: CupertinoColors.inactiveGray),
         ),
-      ], 44.0),
+      ], cellHeight),
     );
   }
 
@@ -283,18 +284,18 @@ class _MyHomePageState extends State<MyHomePage> {
       prefix: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: const Text("Amount")),
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
       controller: textFieldController,
       clearButtonMode: OverlayVisibilityMode.editing,
       keyboardType: TextInputType.number,
       decoration: BoxDecoration(
-        color: CupertinoTheme.of(context).scaffoldBackgroundColor ,
+        color: CupertinoTheme.of(context).scaffoldBackgroundColor,
         border: const Border(
           top: BorderSide(color: Color(0xFFBCBBC1), width: 0.0),
           bottom: BorderSide(color: Color(0xFFBCBBC1), width: 0.0),
         ),
       ),
-      placeholder: 'Insert the amount of money to convert',
+      placeholder: 'Amount of money to convert',
       onChanged: (newName) {
         setState(() {
           //name = newName;
@@ -402,7 +403,7 @@ class SecondScreen extends StatelessWidget {
   // receive data from the FirstScreen as a parameter
   SecondScreen({Key key, @required this.moneyData}) : super(key: key);
 
-  String calcInflation() {
+  double calcInflation() {
     var start = moneyData.currentValueEnd.toString();
     var end = moneyData.currentValueStart.toString();
     var c = conversionHelper();
@@ -425,7 +426,8 @@ class SecondScreen extends StatelessWidget {
       oldCPI = table["2019"];
     var newCPI = table[start];
     var amountWithInflation = (moneyData.amount * (newCPI / oldCPI));
-    return FlutterMoneyFormatter(amount: amountWithInflation).output.nonSymbol;
+    return amountWithInflation;
+//    return FlutterMoneyFormatter(amount: amountWithInflation).output.nonSymbol;
   }
 
   String getSymbol() {
@@ -442,6 +444,48 @@ class SecondScreen extends StatelessWidget {
     }
   }
 
+  String calcInflationIncrease() {
+    return ((calcInflation() * 100) / moneyData.amount).toStringAsFixed(1);
+  }
+
+  Widget _buildCard(double horizontalMargin, IconData icon, String title, String subtitle) {
+    return Card(
+      elevation: 8.0,
+      margin:
+      new EdgeInsets.symmetric(horizontal: horizontalMargin, vertical: 6.0),
+      child: Container(
+        decoration:
+        BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
+        child: ListTile(
+          contentPadding:
+          EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+          leading: Container(
+            padding: EdgeInsets.only(right: 12.0),
+            decoration: new BoxDecoration(
+                border: new Border(
+                    right: new BorderSide(
+                        width: 1.0, color: Colors.white24))),
+            child: Icon(icon, color: Colors.white),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
+
+          subtitle: Row(
+            children: <Widget>[
+//                      Icon(Icons.linear_scale, color: Colors.yellowAccent),
+              Text(subtitle,
+                  style: TextStyle(color: Colors.white))
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     //statusbar color https://stackoverflow.com/questions/52489458/how-to-change-status-bar-color-in-flutter
@@ -451,12 +495,15 @@ class SecondScreen extends StatelessWidget {
           : Color(0xff262626),
     ));
 
+    var formattedAmount =
+        FlutterMoneyFormatter(amount: moneyData.amount).output.nonSymbol;
+    var amountWithInflation =
+        FlutterMoneyFormatter(amount: calcInflation()).output.nonSymbol;
+    const horizontalMargin = 16.0;
+
     return CupertinoPageScaffold(
         navigationBar: CupertinoNavigationBar(
-          middle: const Text('Inflation Calculator'),
-          // We're specifying a back label here because the previous page is a
-          // Material page. CupertinoPageRoutes could auto-populate these back
-          // labels.
+          middle: const Text('Result'),
         ),
         child: DefaultTextStyle(
           style: CupertinoTheme.of(context).textTheme.textStyle,
@@ -464,84 +511,17 @@ class SecondScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: CupertinoTheme.of(context).brightness == Brightness.light
                   ? CupertinoColors.extraLightBackgroundGray
-                  : CupertinoColors.darkBackgroundGray,
+                  : Color(0xff262626),
             ),
             child: new ListView(children: <Widget>[
               const Padding(padding: EdgeInsets.only(top: 32.0)),
-              Card(
-                elevation: 8.0,
-                margin:
-                    new EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
-                child: Container(
-                  decoration:
-                      BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
-                  child: ListTile(
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                    leading: Container(
-                      padding: EdgeInsets.only(right: 12.0),
-                      decoration: new BoxDecoration(
-                          border: new Border(
-                              right: new BorderSide(
-                                  width: 1.0, color: Colors.white24))),
-                      child: Icon(Icons.money_off, color: Colors.white),
-                    ),
-                    title: Text(
-                      "${getSymbol()}${FlutterMoneyFormatter(amount: moneyData.amount).output.nonSymbol}",
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                    // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
+              _buildCard(horizontalMargin, Icons.money_off, "${getSymbol()}$formattedAmount", "${moneyData.currentValueStart}"),
+              _buildCard(horizontalMargin, Icons.monetization_on, "${getSymbol()}$amountWithInflation", "${moneyData.currentValueEnd}"),
 
-                    subtitle: Row(
-                      children: <Widget>[
-//                      Icon(Icons.linear_scale, color: Colors.yellowAccent),
-                        Text("${moneyData.currentValueStart}",
-                            style: TextStyle(color: Colors.white))
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Card(
-                elevation: 8.0,
-                margin:
-                    new EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
-                child: Container(
-                  decoration:
-                      BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
-                  child: ListTile(
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                    leading: Container(
-                      padding: EdgeInsets.only(right: 12.0),
-                      decoration: new BoxDecoration(
-                          border: new Border(
-                              right: new BorderSide(
-                                  width: 1.0, color: Colors.white24))),
-                      child: Icon(Icons.monetization_on, color: Colors.white),
-                    ),
-                    title: Text(
-                      "${getSymbol()}${calcInflation()}",
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                    // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
-
-                    subtitle: Row(
-                      children: <Widget>[
-//                      Icon(Icons.linear_scale, color: Colors.yellowAccent),
-                        Text("${moneyData.currentValueEnd}",
-                            style: TextStyle(color: Colors.white))
-                      ],
-                    ),
-                  ),
-                ),
-              ),
               Container(
-                padding: EdgeInsets.all(20.0),
+                padding: EdgeInsets.all(horizontalMargin),
                 child: Text(
-                  "${getSymbol()}${FlutterMoneyFormatter(amount: moneyData.amount).output.nonSymbol} in ${moneyData.currentValueStart} have the same purchasing power as ${getSymbol()}${calcInflation()} in ${moneyData.currentValueEnd}.",
+                  "${getSymbol()}${formattedAmount} in ${moneyData.currentValueStart} have the same purchasing power as ${getSymbol()}${amountWithInflation} in ${moneyData.currentValueEnd}.\nIn ${moneyData.currentValueEnd - moneyData.currentValueStart} years, inflation increased by ${calcInflationIncrease()}%",
                   style: TextStyle(
                     fontSize: 18,
                   ),
