@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_masked_text/flutter_masked_text.dart';
+import 'converionHelper.dart';
 
 const double _kPickerSheetHeight = 216.0;
 const double _kPickerItemHeight = 32.0;
-const List<String> coolColorNames = <String>[
-  'Sarcoline', 'Coquelicot', 'Smaragdine', 'Mikado', 'Glaucous', 'Wenge',
-  'Fulvous', 'Xanadu', 'Falu', 'Eburnean', 'Amaranth', 'Australien',
-  'Banan', 'Falu', 'Gingerline', 'Incarnadine', 'Labrador', 'Nattier',
-  'Pervenche', 'Sinoper', 'Verditer', 'Watchet', 'Zaffre',
+
+const List<String> currencies = <String>[
+  '\$ United States Dollar',
+  '£ Great Britain Pound',
+  '₤ Italian Lira'
 ];
+
+class _MoneyData {
+  double amount = 0.0;
+  int currentValueStart = 1950;
+  int currentValueEnd = new DateTime.now().year;
+  int currency = 0;
+}
 
 void main() => runApp(MyApp());
 
@@ -35,15 +44,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -51,10 +51,45 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _selectedColorIndex = 0;
 
+  static range(int a, [int stop, int step]) {
+    int start;
 
-  Widget _buildMenu(List<Widget> children) {
+    if (stop == null) {
+      start = 0;
+      stop = a;
+    } else {
+      start = a;
+    }
+
+    if (step == 0) throw Exception("Step cannot be 0");
+
+    if (step == null)
+      start < stop
+          ? step = 1 // walk forwards
+          : step = -1; // walk backwards
+
+    // return [] if step is in wrong direction
+    return start < stop == step > 0
+        ? List<int>.generate(
+            ((start - stop) / step).abs().ceil(), (int i) => start + (i * step))
+        : [];
+  }
+
+  static int startYear = 1775;
+  static int lastYear = 2019;
+  List<int> years = range(startYear, lastYear + 1);
+  int _selectedCurrencyIndex = 0;
+  int _selectedStartIndex = 0;
+  int _selectedEndIndex = (lastYear) - startYear;
+
+  _MoneyData moneyData = new _MoneyData();
+
+  TextEditingController textFieldController = MoneyMaskedTextController(
+      decimalSeparator: '.',
+      thousandSeparator: '');
+
+  Widget _buildMenu(List<Widget> children, double height) {
     return Container(
       decoration: BoxDecoration(
         color: CupertinoTheme.of(context).scaffoldBackgroundColor,
@@ -63,7 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
           bottom: BorderSide(color: Color(0xFFBCBBC1), width: 0.0),
         ),
       ),
-      height: 44.0,
+      height: height,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: SafeArea(
@@ -90,7 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         child: GestureDetector(
           // Blocks taps from propagating to the modal sheet and popping.
-          onTap: () { },
+          onTap: () {},
           child: SafeArea(
             top: false,
             child: picker,
@@ -100,9 +135,21 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildColorPicker(BuildContext context) {
+  Widget _buildAmountPicker() {
+    return _buildMenu(<Widget>[
+      const Text('Amount'),
+      CupertinoTextField(
+        controller: textFieldController,
+        keyboardType: TextInputType.number,
+        maxLines: 1,
+      )
+    ], 44.0);
+  }
+
+
+  Widget _buildCurrencyPicker(BuildContext context) {
     final FixedExtentScrollController scrollController =
-    FixedExtentScrollController(initialItem: _selectedColorIndex);
+        FixedExtentScrollController(initialItem: _selectedCurrencyIndex);
 
     return GestureDetector(
       onTap: () async {
@@ -115,11 +162,27 @@ class _MyHomePageState extends State<MyHomePage> {
                 itemExtent: _kPickerItemHeight,
                 backgroundColor: CupertinoColors.white,
                 onSelectedItemChanged: (int index) {
-                  setState(() => _selectedColorIndex = index);
+                  setState(() => _selectedCurrencyIndex = index);
+                  moneyData.currency = index;
+                  switch (index) {
+                    case 0:
+                      startYear = 1774;
+                      break;
+                    case 1:
+                      startYear = 1751;
+                      break;
+                    case 2:
+                      startYear = 1861;
+                      break;
+                  }
+                  years = range(startYear, lastYear + 1);
+                  _selectedStartIndex = 0;
+                  _selectedEndIndex = (lastYear) - startYear;
+
                 },
-                children: List<Widget>.generate(coolColorNames.length, (int index) {
+                children: List<Widget>.generate(currencies.length, (int index) {
                   return Center(
-                    child: Text(coolColorNames[index]),
+                    child: Text(currencies[index]),
                   );
                 }),
               ),
@@ -127,30 +190,102 @@ class _MyHomePageState extends State<MyHomePage> {
           },
         );
       },
-      child: _buildMenu(
-        <Widget>[
-          const Text('Favorite Color'),
-          Text(
-            coolColorNames[_selectedColorIndex],
-            style: const TextStyle(
-                color: CupertinoColors.inactiveGray
-            ),
-          ),
-        ],
-      ),
+      child: _buildMenu(<Widget>[
+        const Text('Currency'),
+        Text(
+          currencies[_selectedCurrencyIndex],
+          style: const TextStyle(color: CupertinoColors.inactiveGray),
+        ),
+      ], 44.0),
+    );
+  }
+
+  Widget _buildStartYearPicker(BuildContext context) {
+    final FixedExtentScrollController scrollController =
+        FixedExtentScrollController(initialItem: _selectedStartIndex);
+
+    return GestureDetector(
+      onTap: () async {
+        await showCupertinoModalPopup<void>(
+          context: context,
+          builder: (BuildContext context) {
+            return _buildBottomPicker(
+              CupertinoPicker(
+                scrollController: scrollController,
+                itemExtent: _kPickerItemHeight,
+                backgroundColor: CupertinoColors.white,
+                onSelectedItemChanged: (int index) {
+                  setState(() => _selectedStartIndex = index);
+                  moneyData.currentValueStart = years[index];
+                },
+                children: List<Widget>.generate(years.length, (int index) {
+                  return Center(
+                    child: Text(years[index].toString()),
+                  );
+                }),
+              ),
+            );
+          },
+        );
+      },
+      child: _buildMenu(<Widget>[
+        const Text('Start year'),
+        Text(
+          years[_selectedStartIndex].toString(),
+          style: const TextStyle(color: CupertinoColors.inactiveGray),
+        ),
+      ], 44.0),
+    );
+  }
+
+  Widget _buildEndYearPicker(BuildContext context) {
+    final FixedExtentScrollController scrollController =
+        FixedExtentScrollController(initialItem: _selectedEndIndex);
+
+    return GestureDetector(
+      onTap: () async {
+        await showCupertinoModalPopup<void>(
+          context: context,
+          builder: (BuildContext context) {
+            return _buildBottomPicker(
+              CupertinoPicker(
+                scrollController: scrollController,
+                itemExtent: _kPickerItemHeight,
+                backgroundColor: CupertinoColors.white,
+                onSelectedItemChanged: (int index) {
+                  setState(() => _selectedEndIndex = index);
+                  moneyData.currentValueEnd = years[index];
+                },
+                children: List<Widget>.generate(years.length, (int index) {
+                  return Center(
+                    child: Text(years[index].toString()),
+                  );
+                }),
+              ),
+            );
+          },
+        );
+      },
+      child: _buildMenu(<Widget>[
+        const Text('End year'),
+        Text(
+          years[_selectedEndIndex].toString(),
+          style: const TextStyle(color: CupertinoColors.inactiveGray),
+        ),
+      ], 44.0),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-
     //statusbar color https://stackoverflow.com/questions/52489458/how-to-change-status-bar-color-in-flutter
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        statusBarColor: CupertinoTheme.of(context).brightness == Brightness.light
-            ?  Color(0xfff5f5f5)
-            :  Color(0xff1e1e1e),
+      statusBarColor: CupertinoTheme.of(context).brightness == Brightness.light
+          ? Color(0xfff5f5f5)
+          : Color(0xff1e1e1e),
     ));
 
+    final Size screenSize = MediaQuery.of(context).size;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -170,11 +305,197 @@ class _MyHomePageState extends State<MyHomePage> {
           child: ListView(
             children: <Widget>[
               const Padding(padding: EdgeInsets.only(top: 32.0)),
-              _buildColorPicker(context),
+              _buildAmountPicker(),
+              const Padding(padding: EdgeInsets.only(top: 32.0)),
+              _buildCurrencyPicker(context),
+              _buildStartYearPicker(context),
+              _buildEndYearPicker(context),
+              const Padding(padding: EdgeInsets.only(top: 32.0)),
+              Container(
+                width: screenSize.width,
+                child: new CupertinoButton(
+                  child: new Text(
+                    'Calculate',
+                    style: new TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () {
+                    _sendDataToSecondScreen(context);
+                  },
+                  color: CupertinoColors.activeBlue,
+                ),
+                margin: new EdgeInsets.all(20.0),
+                height: 60.0,
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  // get the text in the TextField and start the Second Screen
+  void _sendDataToSecondScreen(BuildContext context) {
+    String textToSend = textFieldController.text;
+    moneyData.amount = num.tryParse(textToSend).toDouble();
+    moneyData.currency = _selectedCurrencyIndex;
+
+    Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => SecondScreen(
+            moneyData: moneyData,
+          ),
+        ));
+  }
+}
+
+class SecondScreen extends StatelessWidget {
+  final _MoneyData moneyData;
+
+  // receive data from the FirstScreen as a parameter
+  SecondScreen({Key key, @required this.moneyData}) : super(key: key);
+
+  String calcInflation() {
+    var start = moneyData.currentValueEnd.toString();
+    var end = moneyData.currentValueStart.toString();
+    var c = conversionHelper();
+    var table;
+    switch (moneyData.currency) {
+      case 0:
+        table = c.dollarConversionTable;
+        break;
+      case 1:
+        table = c.poundConversionTable;
+        break;
+      case 2:
+        table = c.liraConversionTable;
+        break;
+    }
+    var oldCPI;
+    if (table[end] != null)
+      oldCPI = table[end];
+    else
+      oldCPI = table["2019"];
+    var newCPI = table[start];
+    return (moneyData.amount * (newCPI / oldCPI)).toStringAsFixed(2);
+  }
+
+  String getSymbol() {
+    switch (moneyData.currency) {
+      case 0:
+        return "\$";
+        break;
+      case 1:
+        return "£";
+        break;
+      case 2:
+        return "₤";
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    //statusbar color https://stackoverflow.com/questions/52489458/how-to-change-status-bar-color-in-flutter
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: CupertinoTheme.of(context).brightness == Brightness.light
+          ? Color(0xfff5f5f5)
+          : Color(0xff1e1e1e),
+    ));
+
+    return CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          middle: const Text('Inflation Calculator'),
+          // We're specifying a back label here because the previous page is a
+          // Material page. CupertinoPageRoutes could auto-populate these back
+          // labels.
+        ),
+        child: DefaultTextStyle(
+          style: CupertinoTheme.of(context).textTheme.textStyle,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: CupertinoTheme.of(context).brightness == Brightness.light
+                  ? CupertinoColors.extraLightBackgroundGray
+                  : CupertinoColors.darkBackgroundGray,
+            ),
+            child: new ListView(children: <Widget>[
+              Card(
+                elevation: 8.0,
+                margin:
+                    new EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+                child: Container(
+                  decoration:
+                      BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
+                  child: ListTile(
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                    leading: Container(
+                      padding: EdgeInsets.only(right: 12.0),
+                      decoration: new BoxDecoration(
+                          border: new Border(
+                              right: new BorderSide(
+                                  width: 1.0, color: Colors.white24))),
+                      child: Icon(Icons.money_off, color: Colors.white),
+                    ),
+                    title: Text(
+                      "${getSymbol()}${moneyData.amount}",
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
+
+                    subtitle: Row(
+                      children: <Widget>[
+//                      Icon(Icons.linear_scale, color: Colors.yellowAccent),
+                        Text("${moneyData.currentValueStart}",
+                            style: TextStyle(color: Colors.white))
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Card(
+                elevation: 8.0,
+                margin:
+                    new EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+                child: Container(
+                  decoration:
+                      BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
+                  child: ListTile(
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                    leading: Container(
+                      padding: EdgeInsets.only(right: 12.0),
+                      decoration: new BoxDecoration(
+                          border: new Border(
+                              right: new BorderSide(
+                                  width: 1.0, color: Colors.white24))),
+                      child: Icon(Icons.monetization_on, color: Colors.white),
+                    ),
+                    title: Text(
+                      "${getSymbol()}${calcInflation()}",
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
+
+                    subtitle: Row(
+                      children: <Widget>[
+//                      Icon(Icons.linear_scale, color: Colors.yellowAccent),
+                        Text("${moneyData.currentValueEnd}",
+                            style: TextStyle(color: Colors.white))
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              new Padding(padding: EdgeInsets.only(top: 30.0)),
+              Text(
+                "${getSymbol()}${moneyData.amount} in ${moneyData.currentValueStart} have the same purchasing power as ${getSymbol()}${calcInflation()} in ${moneyData.currentValueEnd}.",
+                style: TextStyle(fontSize: 18),
+              ),
+            ]),
+          ),
+        ));
   }
 }
