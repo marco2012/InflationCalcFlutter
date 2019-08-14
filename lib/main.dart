@@ -11,7 +11,7 @@ const double _kPickerItemHeight = 32.0;
 
 const List<String> currencies = <String>[
   '\$ United States Dollar',
-  '£ Great Britain Pound',
+  '£ British pound sterling',
   '₤ Italian Lira'
 ];
 
@@ -147,17 +147,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildAmountPicker() {
-    return _buildMenu(<Widget>[
-      const Text('Amount'),
-      CupertinoTextField(
-        controller: textFieldController,
-        keyboardType: TextInputType.number,
-        maxLines: 1,
-      )
-    ], 44.0);
-  }
-
   Widget _buildCurrencyPicker(BuildContext context) {
     final FixedExtentScrollController scrollController =
         FixedExtentScrollController(initialItem: _selectedCurrencyIndex);
@@ -171,7 +160,8 @@ class _MyHomePageState extends State<MyHomePage> {
               CupertinoPicker(
                 scrollController: scrollController,
                 itemExtent: _kPickerItemHeight,
-                backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
+                backgroundColor:
+                    CupertinoTheme.of(context).scaffoldBackgroundColor,
                 onSelectedItemChanged: (int index) {
                   setState(() => _selectedCurrencyIndex = index);
                   moneyData.currency = index;
@@ -223,7 +213,8 @@ class _MyHomePageState extends State<MyHomePage> {
               CupertinoPicker(
                 scrollController: scrollController,
                 itemExtent: _kPickerItemHeight,
-                backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
+                backgroundColor:
+                    CupertinoTheme.of(context).scaffoldBackgroundColor,
                 onSelectedItemChanged: (int index) {
                   setState(() => _selectedStartIndex = index);
                   moneyData.currentValueStart = years[index];
@@ -261,7 +252,8 @@ class _MyHomePageState extends State<MyHomePage> {
               CupertinoPicker(
                 scrollController: scrollController,
                 itemExtent: _kPickerItemHeight,
-                backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
+                backgroundColor:
+                    CupertinoTheme.of(context).scaffoldBackgroundColor,
                 onSelectedItemChanged: (int index) {
                   setState(() => _selectedEndIndex = index);
                   moneyData.currentValueEnd = years[index];
@@ -283,6 +275,31 @@ class _MyHomePageState extends State<MyHomePage> {
           style: const TextStyle(color: CupertinoColors.inactiveGray),
         ),
       ], 44.0),
+    );
+  }
+
+  Widget _buildAmountField(BuildContext context) {
+    return CupertinoTextField(
+      prefix: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: const Text("Amount")),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
+      controller: textFieldController,
+      clearButtonMode: OverlayVisibilityMode.editing,
+      keyboardType: TextInputType.number,
+      decoration: BoxDecoration(
+        color: CupertinoTheme.of(context).scaffoldBackgroundColor ,
+        border: const Border(
+          top: BorderSide(color: Color(0xFFBCBBC1), width: 0.0),
+          bottom: BorderSide(color: Color(0xFFBCBBC1), width: 0.0),
+        ),
+      ),
+      placeholder: 'Insert the amount of money to convert',
+      onChanged: (newName) {
+        setState(() {
+          //name = newName;
+        });
+      },
     );
   }
 
@@ -332,7 +349,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 child: ListView(
                   children: <Widget>[
-                    _buildAmountPicker(),
+                    _buildAmountField(context),
                     const Padding(padding: EdgeInsets.only(top: 32.0)),
                     _buildCurrencyPicker(context),
                     _buildStartYearPicker(context),
