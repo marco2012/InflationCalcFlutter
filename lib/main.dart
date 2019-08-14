@@ -525,7 +525,9 @@ class SecondScreen extends StatelessWidget {
                 padding: EdgeInsets.all(20.0),
                 child: Text(
                   "${getSymbol()}${FlutterMoneyFormatter(amount: moneyData.amount).output.nonSymbol} in ${moneyData.currentValueStart} have the same purchasing power as ${getSymbol()}${calcInflation()} in ${moneyData.currentValueEnd}.",
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
                 ),
               )
             ]),
