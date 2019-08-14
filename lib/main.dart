@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_masked_text/flutter_masked_text.dart';
 import 'converionHelper.dart';
+import 'package:flutter_money_formatter/flutter_money_formatter.dart';
+import 'package:dynamic_theme/dynamic_theme.dart';
 
 const double _kPickerSheetHeight = 216.0;
 const double _kPickerItemHeight = 32.0;
@@ -26,18 +28,31 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Inflation Calculator',
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primarySwatch: Colors.blue,
-      ),
+//    return MaterialApp(
+//      debugShowCheckedModeBanner: false,
+//      title: 'Inflation Calculator',
+//      theme: ThemeData(
+//        brightness: Brightness.light,
+//      ),
 //      darkTheme: ThemeData(
 //        brightness: Brightness.dark,
 //      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+//      home: MyHomePage(title: 'Flutter Demo Home Page'),
+//    );
+    return new DynamicTheme(
+        defaultBrightness: Brightness.light,
+        data: (brightness) => new ThemeData(
+              primarySwatch: Colors.indigo,
+              brightness: brightness,
+            ),
+        themedWidgetBuilder: (context, theme) {
+          return new MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Inflation Calculator',
+            theme: theme,
+            home: new MyHomePage(title: 'Inflation Calc'),
+          );
+        });
   }
 }
 
@@ -51,7 +66,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   static range(int a, [int stop, int step]) {
     int start;
 
@@ -85,9 +99,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   _MoneyData moneyData = new _MoneyData();
 
-  TextEditingController textFieldController = MoneyMaskedTextController(
-      decimalSeparator: '.',
-      thousandSeparator: '');
+  TextEditingController textFieldController =
+      MoneyMaskedTextController(decimalSeparator: '.', thousandSeparator: '');
 
   Widget _buildMenu(List<Widget> children, double height) {
     return Container(
@@ -146,7 +159,6 @@ class _MyHomePageState extends State<MyHomePage> {
     ], 44.0);
   }
 
-
   Widget _buildCurrencyPicker(BuildContext context) {
     final FixedExtentScrollController scrollController =
         FixedExtentScrollController(initialItem: _selectedCurrencyIndex);
@@ -178,7 +190,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   years = range(startYear, lastYear + 1);
                   _selectedStartIndex = 0;
                   _selectedEndIndex = (lastYear) - startYear;
-
                 },
                 children: List<Widget>.generate(currencies.length, (int index) {
                   return Center(
@@ -278,57 +289,77 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    //statusbar color https://stackoverflow.com/questions/52489458/how-to-change-status-bar-color-in-flutter
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: CupertinoTheme.of(context).brightness == Brightness.light
-          ? Color(0xfff5f5f5)
-          : Color(0xff1e1e1e),
-    ));
+    //set white statusbar at load
+    SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle(statusBarColor: Color(0xfff8f8f8)));
 
     final Size screenSize = MediaQuery.of(context).size;
 
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Inflation Calculator'),
-        // We're specifying a back label here because the previous page is a
-        // Material page. CupertinoPageRoutes could auto-populate these back
-        // labels.
-      ),
-      child: DefaultTextStyle(
-        style: CupertinoTheme.of(context).textTheme.textStyle,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: CupertinoTheme.of(context).brightness == Brightness.light
-                ? CupertinoColors.extraLightBackgroundGray
-                : CupertinoColors.darkBackgroundGray,
-          ),
-          child: ListView(
-            children: <Widget>[
-              const Padding(padding: EdgeInsets.only(top: 32.0)),
-              _buildAmountPicker(),
-              const Padding(padding: EdgeInsets.only(top: 32.0)),
-              _buildCurrencyPicker(context),
-              _buildStartYearPicker(context),
-              _buildEndYearPicker(context),
-              const Padding(padding: EdgeInsets.only(top: 32.0)),
-              Container(
-                width: screenSize.width,
-                child: new CupertinoButton(
-                  child: new Text(
-                    'Calculate',
-                    style: new TextStyle(color: Colors.white),
-                  ),
-                  onPressed: () {
-                    _sendDataToSecondScreen(context);
-                  },
-                  color: CupertinoColors.activeBlue,
-                ),
-                margin: new EdgeInsets.all(20.0),
-                height: 60.0,
+      child: CustomScrollView(
+        slivers: <Widget>[
+          CupertinoSliverNavigationBar(
+            largeTitle: Text("Inflation Calculator"),
+            trailing: GestureDetector(
+              //https://stackoverflow.com/a/56725450/1440037
+              onTap: () {
+                //https://github.com/Norbert515/dynamic_theme
+                DynamicTheme.of(context).setBrightness(
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Brightness.light
+                        : Brightness.dark);
+
+                SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+                  statusBarColor:
+                      CupertinoTheme.of(context).brightness != Brightness.light
+                          ? Color(0xfff8f8f8)
+                          : Color(0xff262626),
+                ));
+              },
+              child: Icon(
+                CupertinoIcons.gear,
               ),
-            ],
+            ),
           ),
-        ),
+          SliverFillRemaining(
+            child: DefaultTextStyle(
+              style: CupertinoTheme.of(context).textTheme.textStyle,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color:
+                      CupertinoTheme.of(context).brightness == Brightness.light
+                          ? CupertinoColors.extraLightBackgroundGray
+                          : CupertinoColors.darkBackgroundGray,
+                ),
+                child: ListView(
+                  children: <Widget>[
+                    _buildAmountPicker(),
+                    const Padding(padding: EdgeInsets.only(top: 32.0)),
+                    _buildCurrencyPicker(context),
+                    _buildStartYearPicker(context),
+                    _buildEndYearPicker(context),
+                    const Padding(padding: EdgeInsets.only(top: 32.0)),
+                    Container(
+                      width: screenSize.width,
+                      child: new CupertinoButton(
+                        child: new Text(
+                          'Calculate',
+                          style: new TextStyle(color: Colors.white),
+                        ),
+                        onPressed: () {
+                          _sendDataToSecondScreen(context);
+                        },
+                        color: CupertinoColors.activeBlue,
+                      ),
+                      margin: new EdgeInsets.all(20.0),
+                      height: 60.0,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -377,7 +408,8 @@ class SecondScreen extends StatelessWidget {
     else
       oldCPI = table["2019"];
     var newCPI = table[start];
-    return (moneyData.amount * (newCPI / oldCPI)).toStringAsFixed(2);
+    var amountWithInflation = (moneyData.amount * (newCPI / oldCPI));
+    return FlutterMoneyFormatter(amount: amountWithInflation).output.nonSymbol;
   }
 
   String getSymbol() {
@@ -399,8 +431,8 @@ class SecondScreen extends StatelessWidget {
     //statusbar color https://stackoverflow.com/questions/52489458/how-to-change-status-bar-color-in-flutter
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: CupertinoTheme.of(context).brightness == Brightness.light
-          ? Color(0xfff5f5f5)
-          : Color(0xff1e1e1e),
+          ? Color(0xfff8f8f8)
+          : Color(0xff262626),
     ));
 
     return CupertinoPageScaffold(
@@ -419,6 +451,7 @@ class SecondScreen extends StatelessWidget {
                   : CupertinoColors.darkBackgroundGray,
             ),
             child: new ListView(children: <Widget>[
+              const Padding(padding: EdgeInsets.only(top: 32.0)),
               Card(
                 elevation: 8.0,
                 margin:
@@ -438,7 +471,7 @@ class SecondScreen extends StatelessWidget {
                       child: Icon(Icons.money_off, color: Colors.white),
                     ),
                     title: Text(
-                      "${getSymbol()}${moneyData.amount}",
+                      "${getSymbol()}${FlutterMoneyFormatter(amount: moneyData.amount).output.nonSymbol}",
                       style: TextStyle(
                           color: Colors.white, fontWeight: FontWeight.bold),
                     ),
@@ -489,11 +522,13 @@ class SecondScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              new Padding(padding: EdgeInsets.only(top: 30.0)),
-              Text(
-                "${getSymbol()}${moneyData.amount} in ${moneyData.currentValueStart} have the same purchasing power as ${getSymbol()}${calcInflation()} in ${moneyData.currentValueEnd}.",
-                style: TextStyle(fontSize: 18),
-              ),
+              Container(
+                padding: EdgeInsets.all(20.0),
+                child: Text(
+                  "${getSymbol()}${FlutterMoneyFormatter(amount: moneyData.amount).output.nonSymbol} in ${moneyData.currentValueStart} have the same purchasing power as ${getSymbol()}${calcInflation()} in ${moneyData.currentValueEnd}.",
+                  style: TextStyle(fontSize: 18),
+                ),
+              )
             ]),
           ),
         ));
