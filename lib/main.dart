@@ -11,14 +11,14 @@ const double _kPickerItemHeight = 32.0;
 const double cellHeight = 50.0;
 
 const List<String> currencies = <String>[
-  '\$ United States Dollar',
+  '\$ United States dollar',
   '£ British pound sterling',
-  '₤ Italian Lira'
+  '₤ Italian lira',
 ];
 
 class _MoneyData {
   double amount = 0.0;
-  int currentValueStart = 1950;
+  int currentValueStart = 0;
   int currentValueEnd = new DateTime.now().year;
   int currency = 0;
 }
@@ -29,17 +29,6 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-//    return MaterialApp(
-//      debugShowCheckedModeBanner: false,
-//      title: 'Inflation Calculator',
-//      theme: ThemeData(
-//        brightness: Brightness.light,
-//      ),
-//      darkTheme: ThemeData(
-//        brightness: Brightness.dark,
-//      ),
-//      home: MyHomePage(title: 'Flutter Demo Home Page'),
-//    );
     return new DynamicTheme(
         defaultBrightness: Brightness.light,
         data: (brightness) => new ThemeData(
@@ -101,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
   _MoneyData moneyData = new _MoneyData();
 
   TextEditingController textFieldController =
-      MoneyMaskedTextController(decimalSeparator: '.', thousandSeparator: '');
+      MoneyMaskedTextController(decimalSeparator: '.', thousandSeparator: ',');
 
   Widget _buildMenu(List<Widget> children, double height) {
     return Container(
@@ -175,6 +164,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       break;
                     case 2:
                       startYear = 1861;
+                      break;
+                    case 3:
+                      startYear = 1901;
                       break;
                   }
                   years = range(startYear, lastYear + 1);
@@ -306,9 +298,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    //set white statusbar at load
-    SystemChrome.setSystemUIOverlayStyle(
-        SystemUiOverlayStyle(statusBarColor: Color(0xfff8f8f8)));
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: CupertinoTheme.of(context).brightness != Brightness.light
+          ? Color(0xfff8f8f8)
+          : Color(0xff262626),
+    ));
 
     final Size screenSize = MediaQuery.of(context).size;
 
@@ -383,7 +377,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // get the text in the TextField and start the Second Screen
   void _sendDataToSecondScreen(BuildContext context) {
-    String textToSend = textFieldController.text;
+    String textToSend =
+        textFieldController.text.replaceAll(new RegExp(r','), '');
     moneyData.amount = num.tryParse(textToSend).toDouble();
     moneyData.currency = _selectedCurrencyIndex;
 
@@ -404,8 +399,8 @@ class SecondScreen extends StatelessWidget {
   SecondScreen({Key key, @required this.moneyData}) : super(key: key);
 
   double calcInflation() {
-    var start = moneyData.currentValueEnd.toString();
-    var end = moneyData.currentValueStart.toString();
+    var start = moneyData.currentValueStart.toString();
+    var end = moneyData.currentValueEnd.toString();
     var c = conversionHelper();
     var table;
     switch (moneyData.currency) {
@@ -416,18 +411,22 @@ class SecondScreen extends StatelessWidget {
         table = c.poundConversionTable;
         break;
       case 2:
-        table = c.liraConversionTable;
+        table = c.liraConversionTableToEur;
+        break;
+      case 3:
+        table = c.franceConversionTable;
         break;
     }
-    var oldCPI;
-    if (table[end] != null)
-      oldCPI = table[end];
-    else
-      oldCPI = table["2019"];
-    var newCPI = table[start];
-    var amountWithInflation = (moneyData.amount * (newCPI / oldCPI));
-    return amountWithInflation;
-//    return FlutterMoneyFormatter(amount: amountWithInflation).output.nonSymbol;
+
+    if (moneyData.currency == 2) {
+      return (moneyData.amount * (table[start] / 1936.27));
+    } else if (moneyData.currency == 3) {
+      return (moneyData.amount * (table[start] / 0.010496));
+    } else {
+      var oldCPI = table[start];
+      var newCPI = table[end];
+      return (moneyData.amount * (newCPI / oldCPI));
+    }
   }
 
   String getSymbol() {
@@ -441,44 +440,55 @@ class SecondScreen extends StatelessWidget {
       case 2:
         return "₤";
         break;
+      case 3:
+        return "FF";
+        break;
     }
   }
 
   String calcInflationIncrease() {
-    return ((calcInflation() * 100) / moneyData.amount).toStringAsFixed(1);
+    var increase = 0.0;
+    if (moneyData.currency == 2) {
+      var table = conversionHelper().liraConversionTable;
+      var start = moneyData.currentValueStart.toString();
+      var end = moneyData.currentValueEnd.toString();
+      var oldCPI = table[end];
+      var newCPI = table[start];
+      var inflation = (moneyData.amount * (newCPI / oldCPI));
+      increase = (inflation * 100 / moneyData.amount);
+    } else
+      increase = ((calcInflation() * 100) / moneyData.amount);
+    return FlutterMoneyFormatter(amount: increase).output.withoutFractionDigits;
   }
 
-  Widget _buildCard(double horizontalMargin, IconData icon, String title, String subtitle) {
+  Widget _buildCard(
+      double horizontalMargin, IconData icon, String title, String subtitle) {
     return Card(
       elevation: 8.0,
       margin:
-      new EdgeInsets.symmetric(horizontal: horizontalMargin, vertical: 6.0),
+          new EdgeInsets.symmetric(horizontal: horizontalMargin, vertical: 6.0),
       child: Container(
-        decoration:
-        BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
+        decoration: BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
         child: ListTile(
           contentPadding:
-          EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+              EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
           leading: Container(
             padding: EdgeInsets.only(right: 12.0),
             decoration: new BoxDecoration(
                 border: new Border(
-                    right: new BorderSide(
-                        width: 1.0, color: Colors.white24))),
+                    right: new BorderSide(width: 1.0, color: Colors.white24))),
             child: Icon(icon, color: Colors.white),
           ),
           title: Text(
             title,
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           // subtitle: Text("Intermediate", style: TextStyle(color: Colors.white)),
 
           subtitle: Row(
             children: <Widget>[
 //                      Icon(Icons.linear_scale, color: Colors.yellowAccent),
-              Text(subtitle,
-                  style: TextStyle(color: Colors.white))
+              Text(subtitle, style: TextStyle(color: Colors.white))
             ],
           ),
         ),
@@ -486,14 +496,27 @@ class SecondScreen extends StatelessWidget {
     );
   }
 
+  String makeDescriptiveText() {
+    var formattedAmount =
+        FlutterMoneyFormatter(amount: moneyData.amount).output.nonSymbol;
+    var amountWithInflation =
+        FlutterMoneyFormatter(amount: calcInflation()).output.nonSymbol;
+    var secondSymbol = getSymbol();
+    if (moneyData.currency == 2)
+      secondSymbol = "€";
+    else if (moneyData.currency == 3)
+      secondSymbol = "FF";
+    return "${getSymbol()}$formattedAmount in ${moneyData.currentValueStart} have about the same purchasing power as $secondSymbol$amountWithInflation in ${moneyData.currentValueEnd}.";
+  }
+
   @override
   Widget build(BuildContext context) {
     //statusbar color https://stackoverflow.com/questions/52489458/how-to-change-status-bar-color-in-flutter
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: CupertinoTheme.of(context).brightness == Brightness.light
-          ? Color(0xfff8f8f8)
-          : Color(0xff262626),
-    ));
+//    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+//      statusBarColor: CupertinoTheme.of(context).brightness == Brightness.light
+//          ? Color(0xfff8f8f8)
+//          : Color(0xff262626),
+//    ));
 
     var formattedAmount =
         FlutterMoneyFormatter(amount: moneyData.amount).output.nonSymbol;
@@ -515,13 +538,22 @@ class SecondScreen extends StatelessWidget {
             ),
             child: new ListView(children: <Widget>[
               const Padding(padding: EdgeInsets.only(top: 20.0)),
-              _buildCard(horizontalMargin, Icons.money_off, "${getSymbol()}$formattedAmount", "${moneyData.currentValueStart}"),
-              _buildCard(horizontalMargin, Icons.monetization_on, "${getSymbol()}$amountWithInflation", "${moneyData.currentValueEnd}"),
-
+              _buildCard(
+                  horizontalMargin,
+                  Icons.money_off,
+                  "${getSymbol()}$formattedAmount",
+                  "${moneyData.currentValueStart}"),
+              _buildCard(
+                  horizontalMargin,
+                  Icons.monetization_on,
+                  moneyData.currency == 2
+                      ? "€$amountWithInflation"
+                      : "${getSymbol()}$amountWithInflation",
+                  "${moneyData.currentValueEnd}"),
               Container(
                 padding: EdgeInsets.all(horizontalMargin),
                 child: Text(
-                  "${getSymbol()}${formattedAmount} in ${moneyData.currentValueStart} have the same purchasing power as ${getSymbol()}${amountWithInflation} in ${moneyData.currentValueEnd}.\nIn ${moneyData.currentValueEnd - moneyData.currentValueStart} years, inflation increased by ${calcInflationIncrease()}%",
+                  makeDescriptiveText(),
                   style: TextStyle(
                     fontSize: 18,
                   ),
