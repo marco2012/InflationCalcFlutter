@@ -209,6 +209,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 backgroundColor:
                     CupertinoTheme.of(context).scaffoldBackgroundColor,
                 onSelectedItemChanged: (int index) {
+                  Vibrate.vibrate();
                   setState(() => _selectedStartIndex = index);
                   moneyData.currentValueStart = years[index];
                 },
@@ -504,8 +505,7 @@ class SecondScreen extends StatelessWidget {
     var secondSymbol = getSymbol();
     if (moneyData.currency == 2)
       secondSymbol = "€";
-    else if (moneyData.currency == 3)
-      secondSymbol = "FF";
+    else if (moneyData.currency == 3) secondSymbol = "FF";
     return "${getSymbol()}$formattedAmount in ${moneyData.currentValueStart} have about the same purchasing power as $secondSymbol$amountWithInflation in ${moneyData.currentValueEnd}.";
   }
 
